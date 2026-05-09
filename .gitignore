@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Generated code
+generated/
+
+# Build files
+build/
+
+# IDE
+.vscode/
+
+# Hidden files/folders
+.*
+
+# Allow important git files
+!.gitignore

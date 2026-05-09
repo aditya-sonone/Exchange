@@ -1,0 +1,54 @@
+struct Order {
+    uint64 orderId;
+    uint64 userId;
+    uint64 instrumentId;
+
+    double price;
+    uint32 quantity;
+    uint32 filledQuantity;
+
+    bool isBuy;
+    bool active;
+
+    string symbol;
+}
+
+struct Trade {
+    uint64 tradeId;
+    uint64 buyOrderId;
+    uint64 sellOrderId;
+
+    double price;
+    uint32 quantity;
+
+    uint64 timestamp;
+}
+
+struct Position {
+    uint64 userId;
+    uint64 instrumentId;
+
+    int quantity;
+    double averagePrice;
+
+    double pnl;
+}
+
+struct Balance {
+    uint64 userId;
+
+    double available;
+    double locked;
+}
+
+struct MarketData {
+    string symbol;
+
+    double bidPrice;
+    double askPrice;
+
+    uint32 bidQuantity;
+    uint32 askQuantity;
+
+    double lastTradedPrice;
+}
