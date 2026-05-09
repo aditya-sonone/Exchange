@@ -28,6 +28,51 @@ class CppGenerator:
         capitalized = field_name[0].upper() + field_name[1:]
 
         return f"set{capitalized}"
+    
+    def generate_constructor(self, struct_def):
+
+        params = []
+
+        assignments = []
+
+        for field in struct_def.fields:
+
+            cpp_type = self.cpp_type(field.field_type)
+
+            params.append(
+                f"{cpp_type} {field.name}"
+            )
+
+            assignments.append(
+                f"        this->{field.name} = {field.name};"
+            )
+
+        lines = []
+
+        lines.append(
+            f"    {struct_def.name}("
+        )
+
+        for i, param in enumerate(params):
+
+            comma = ","
+
+            if i == len(params) - 1:
+                comma = ""
+
+            lines.append(
+                f"        {param}{comma}"
+            )
+
+        lines.append("    )")
+        lines.append("    {")
+
+        lines.extend(assignments)
+
+        lines.append("    }")
+        lines.append("")
+
+        return lines
 
     def generate_struct(self, struct_def):
 
@@ -38,6 +83,7 @@ class CppGenerator:
 
         lines.append("#include <cstdint>")
         lines.append("#include <string>")
+        lines.append("#include <sstream>")
         lines.append("")
 
         lines.append(f"class {struct_def.name}")
@@ -56,6 +102,15 @@ class CppGenerator:
         lines.append("")
         lines.append("public:")
         lines.append("")
+        constructor_lines = self.generate_constructor(
+            struct_def
+        )
+        lines.extend(constructor_lines)
+
+        to_string_lines = self.generate_to_string(
+            struct_def
+        )
+        lines.extend(to_string_lines)
 
         for field in struct_def.fields:
 
@@ -101,3 +156,38 @@ class CppGenerator:
         lines.append("};")
 
         return "\n".join(lines)
+    
+    def generate_to_string(self, struct_def):
+
+        lines = []
+
+        lines.append("    std::string toString() const")
+        lines.append("    {")
+
+        lines.append("        std::stringstream ss;")
+
+        lines.append(
+            f'        ss << "{struct_def.name}{{";'
+        )
+
+        for i, field in enumerate(struct_def.fields):
+
+            if i > 0:
+                lines.append(
+                    '        ss << ", ";'
+                )
+
+            lines.append(
+                f'        ss << "{field.name}=" << {field.name};'
+            )
+
+        lines.append('        ss << "}";')
+
+        lines.append("")
+
+        lines.append("        return ss.str();")
+
+        lines.append("    }")
+        lines.append("")
+
+        return lines
