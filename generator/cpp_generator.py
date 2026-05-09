@@ -84,6 +84,8 @@ class CppGenerator:
         lines.append("#include <cstdint>")
         lines.append("#include <string>")
         lines.append("#include <sstream>")
+        lines.append("#include <ostream>")
+        lines.append("#include <istream>")
         lines.append("")
 
         lines.append(f"class {struct_def.name}")
@@ -111,6 +113,18 @@ class CppGenerator:
             struct_def
         )
         lines.extend(to_string_lines)
+
+        serialize_lines = self.generate_serialize(
+            struct_def
+        )
+
+        lines.extend(serialize_lines)
+
+        deserialize_lines = self.generate_deserialize(
+            struct_def
+        )
+
+        lines.extend(deserialize_lines)
 
         for field in struct_def.fields:
 
@@ -158,7 +172,6 @@ class CppGenerator:
         return "\n".join(lines)
     
     def generate_to_string(self, struct_def):
-
         lines = []
 
         lines.append("    std::string toString() const")
@@ -191,3 +204,140 @@ class CppGenerator:
         lines.append("")
 
         return lines
+    
+    def generate_serialize(self, struct_def):
+        lines = []
+
+        lines.append(
+            "    void serialize(std::ostream& out) const"
+        )
+
+        lines.append("    {")
+
+        for field in struct_def.fields:
+
+            if self.is_string_type(field.field_type):
+
+                lines.append(
+                    f"        uint32_t {field.name}Size = {field.name}.size();"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    "        out.write("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<const char*>(&{field.name}Size),"
+                )
+
+                lines.append(
+                    f"            sizeof({field.name}Size)"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+
+                lines.append(
+                    f"        out.write({field.name}.data(), {field.name}Size);"
+                )
+
+                lines.append("")
+
+            else:
+
+                lines.append(
+                    "        out.write("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<const char*>(&{field.name}),"
+                )
+
+                lines.append(
+                    f"            sizeof({field.name})"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+
+        lines.append("    }")
+        lines.append("")
+
+        return lines
+    
+    def generate_deserialize(self, struct_def):
+        lines = []
+
+        lines.append(
+            "    void deserialize(std::istream& in)"
+        )
+
+        lines.append("    {")
+
+        for field in struct_def.fields:
+
+            if self.is_string_type(field.field_type):
+
+                lines.append(
+                    f"        uint32_t {field.name}Size;"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    "        in.read("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<char*>(&{field.name}Size),"
+                )
+
+                lines.append(
+                    f"            sizeof({field.name}Size)"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+
+                lines.append(
+                    f"        {field.name}.resize({field.name}Size);"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    f"        in.read(&{field.name}[0], {field.name}Size);"
+                )
+
+                lines.append("")
+
+            else:
+
+                lines.append(
+                    "        in.read("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<char*>(&{field.name}),"
+                )
+
+                lines.append(
+                    f"            sizeof({field.name})"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+
+        lines.append("    }")
+        lines.append("")
+
+        return lines
+    
+    def is_string_type(self, field_type):
+        return field_type == "string"
