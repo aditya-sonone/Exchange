@@ -6,7 +6,6 @@ from file_writer import FileWriter
 
 
 def main():
-
     # Schema file
     schema_path = Path("../schemas/order.txt")
 
@@ -20,14 +19,33 @@ def main():
     # Parse schema
     parser = SchemaParser()
 
-    structs = parser.parse(schema_text)
+    structs, enums = parser.parse(schema_text)
 
-    # Generate C++
+    # Generator
     generator = CppGenerator()
+    generator.struct_names = {
+        s.name for s in structs
+    }
+    generator.enum_names = {
+        e.name for e in enums
+    }
 
-    # Write generated files
+    # File writer
     writer = FileWriter(generated_dir)
 
+    # Generate enums
+    for enum_def in enums:
+
+        generated_enum = generator.generate_enum(
+            enum_def
+        )
+
+        writer.write_header(
+            enum_def.name,
+            generated_enum
+        )
+
+    # Generate structs
     for struct_def in structs:
 
         generated_code = generator.generate_struct(

@@ -17,3 +17,22 @@ class StructDef:
 
     def __repr__(self):
         return f"StructDef(name={self.name}, fields={self.fields})"
+    
+class EnumDef:
+
+    def __init__(self, name):
+
+        self.name = name
+
+        self.values = []
+
+    def add_value(self, value):
+
+        self.values.append(value)
+
+    def __repr__(self):
+
+        return (
+            f"EnumDef(name={self.name}, "
+            f"values={self.values})"
+        )

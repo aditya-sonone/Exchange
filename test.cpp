@@ -3,13 +3,14 @@
 
 #include "generated/order.hpp"
 
+
 int main()
 {
     Order order(
         1,
+        Side::Buy,
         350.5,
-        10,
-        "BSE"
+        OrderType::IOC
     );
 
     std::ofstream out(
@@ -23,9 +24,9 @@ int main()
 
     Order loadedOrder(
         0,
+        Side::Sell,
         0,
-        0,
-        ""
+        OrderType::FOK
     );
 
     std::ifstream in(

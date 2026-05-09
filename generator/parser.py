@@ -1,6 +1,10 @@
 import re
 
-from models import Field, StructDef
+from models import (
+    Field,
+    StructDef,
+    EnumDef
+)
 
 
 class SchemaParser:
@@ -14,6 +18,11 @@ class SchemaParser:
         r"(\w+)\s+(\w+)\s*;"
     )
 
+    ENUM_PATTERN = re.compile(
+        r"enum\s+(\w+)\s*\{(.*?)\}",
+        re.DOTALL
+    )
+
     def parse(self, text):
 
         structs = []
@@ -21,6 +30,26 @@ class SchemaParser:
         matches = self.STRUCT_PATTERN.findall(text)
 
         # print("STRUCT MATCHES:", matches)
+
+        enums = []
+
+        enum_matches = self.ENUM_PATTERN.findall(text)
+
+        for enum_name, body in enum_matches:
+
+            enum_def = EnumDef(enum_name)
+
+            values = body.split(",")
+
+            for value in values:
+
+                clean_value = value.strip()
+
+                if clean_value:
+
+                    enum_def.add_value(clean_value)
+
+            enums.append(enum_def)
 
         for struct_name, body in matches:
 
@@ -38,4 +67,4 @@ class SchemaParser:
 
             structs.append(struct_def)
 
-        return structs
+        return structs, enums

@@ -10,6 +10,10 @@ TYPE_MAP = {
 
 class CppGenerator:
 
+    def __init__(self):
+        self.struct_names = set()
+        self.enum_names = set()
+
     def cpp_type(self, schema_type):
 
         return TYPE_MAP.get(schema_type, schema_type)
@@ -86,6 +90,26 @@ class CppGenerator:
         lines.append("#include <sstream>")
         lines.append("#include <ostream>")
         lines.append("#include <istream>")
+        # Custom type includes
+        included_types = set()
+
+        for field in struct_def.fields:
+
+            if not self.is_builtin_type(field.field_type):
+
+                if field.field_type not in included_types:
+
+                    include_file = (
+                        field.field_type.lower() + ".hpp"
+                    )
+
+                    lines.append(
+                        f'#include "{include_file}"'
+                    )
+
+                    included_types.add(field.field_type)
+
+        lines.append("")
         lines.append("")
 
         lines.append(f"class {struct_def.name}")
@@ -104,6 +128,13 @@ class CppGenerator:
         lines.append("")
         lines.append("public:")
         lines.append("")
+        default_constructor_lines = (
+            self.generate_default_constructor(
+                struct_def
+            )
+        )
+
+        lines.extend(default_constructor_lines)
         constructor_lines = self.generate_constructor(
             struct_def
         )
@@ -125,6 +156,11 @@ class CppGenerator:
         )
 
         lines.extend(deserialize_lines)
+        binary_size_lines = self.generate_binary_size(
+            struct_def
+        )
+
+        lines.extend(binary_size_lines)
 
         for field in struct_def.fields:
 
@@ -186,14 +222,31 @@ class CppGenerator:
         for i, field in enumerate(struct_def.fields):
 
             if i > 0:
+
                 lines.append(
                     '        ss << ", ";'
                 )
 
-            lines.append(
-                f'        ss << "{field.name}=" << {field.name};'
-            )
+            if self.is_enum_type(field.field_type):
 
+                lines.append(
+                    f'        ss << "{field.name}=" '
+                    f'<< static_cast<int>({field.name});'
+                )
+
+            elif self.is_struct_type(field.field_type):
+
+                lines.append(
+                    f'        ss << "{field.name}=" '
+                    f'<< {field.name}.toString();'
+                )
+
+            else:
+
+                lines.append(
+                    f'        ss << "{field.name}=" '
+                    f'<< {field.name};'
+                )
         lines.append('        ss << "}";')
 
         lines.append("")
@@ -246,6 +299,37 @@ class CppGenerator:
 
                 lines.append("")
 
+            elif self.is_enum_type(field.field_type):
+                temp_name = f"{field.name}Value"
+
+                lines.append(
+                    f"        int {temp_name} = "
+                    f"static_cast<int>({field.name});"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    "        out.write("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<const char*>(&{temp_name}),"
+                )
+
+                lines.append(
+                    f"            sizeof({temp_name})"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+            elif self.is_struct_type(field.field_type):
+                lines.append(
+                    f"        {field.name}.serialize(out);"
+                )
+
+                lines.append("")
             else:
 
                 lines.append(
@@ -316,6 +400,45 @@ class CppGenerator:
 
                 lines.append("")
 
+            elif self.is_enum_type(field.field_type):
+
+                temp_name = f"{field.name}Value"
+
+                lines.append(
+                    f"        int {temp_name};"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    "        in.read("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<char*>(&{temp_name}),"
+                )
+
+                lines.append(
+                    f"            sizeof({temp_name})"
+                )
+
+                lines.append("        );"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    f"        {field.name} = "
+                    f"static_cast<{field.field_type}>({temp_name});"
+                )
+
+                lines.append("")
+            elif self.is_struct_type(field.field_type):
+                lines.append(
+                    f"        {field.name}.deserialize(in);"
+                )
+
+                lines.append("")
             else:
 
                 lines.append(
@@ -333,7 +456,6 @@ class CppGenerator:
                 lines.append("        );")
 
                 lines.append("")
-
         lines.append("    }")
         lines.append("")
 
@@ -341,3 +463,106 @@ class CppGenerator:
     
     def is_string_type(self, field_type):
         return field_type == "string"
+    
+    def generate_binary_size(self, struct_def):
+        lines = []
+
+        lines.append(
+            "    uint32_t binarySize() const"
+        )
+
+        lines.append("    {")
+
+        size_parts = []
+
+        for field in struct_def.fields:
+
+            if self.is_string_type(field.field_type):
+
+                size_parts.append(
+                    f"sizeof(uint32_t) + {field.name}.size()"
+                )
+
+            else:
+
+                size_parts.append(
+                    f"sizeof({field.name})"
+                )
+
+        if size_parts:
+
+            lines.append("        return")
+
+            for i, part in enumerate(size_parts):
+
+                operator = " +"
+
+                if i == len(size_parts) - 1:
+                    operator = ";"
+
+                lines.append(
+                    f"            {part}{operator}"
+                )
+
+        else:
+
+            lines.append("        return 0;")
+
+        lines.append("    }")
+        lines.append("")
+
+        return lines
+    
+    def generate_enum(self, enum_def):
+        lines = []
+
+        lines.append(
+            f"enum class {enum_def.name}"
+        )
+
+        lines.append("{")
+
+        for i, value in enumerate(enum_def.values):
+
+            comma = ","
+
+            if i == len(enum_def.values) - 1:
+                comma = ""
+
+            lines.append(
+                f"    {value}{comma}"
+            )
+
+        lines.append("};")
+        lines.append("")
+
+        return "\n".join(lines)
+    
+    def is_builtin_type(self, field_type):
+
+        builtin_types = {
+            "uint64",
+            "uint32",
+            "int",
+            "double",
+            "bool",
+            "string"
+        }
+
+        return field_type in builtin_types
+    
+    def is_enum_type(self, field_type):
+        return field_type in self.enum_names
+    
+    def is_struct_type(self, field_type):
+        return field_type in self.struct_names
+    
+    def generate_default_constructor(self, struct_def):
+        lines = []
+        lines.append(
+            f"    {struct_def.name}() = default;"
+        )
+
+        lines.append("")
+
+        return lines

@@ -1,6 +1,28 @@
+enum Side {
+    Buy,
+    Sell
+}
+
+enum OrderType {
+    Stop,
+    Limit,
+    IOC, 
+    FOK
+}
+
 struct Order {
     uint64 orderId;
+    Side side;
+    double price;
+    OrderType type;
+}
+
+struct PriceLevel {
     double price;
     uint32 quantity;
-    string symbol;
+}
+
+struct OrderBookEntry {
+    PriceLevel bid;
+    PriceLevel ask;
 }
