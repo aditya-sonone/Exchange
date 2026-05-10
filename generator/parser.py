@@ -10,12 +10,13 @@ from models import (
 class SchemaParser:
 
     STRUCT_PATTERN = re.compile(
+        r"(?:@packet\((\d+)\)\s*)?"
         r"struct\s+(\w+)\s*\{(.*?)\}",
         re.DOTALL
     )
 
     FIELD_PATTERN = re.compile(
-        r"(\w+)\s+(\w+)\s*;"
+        r"([\w<>]+)\s+(\w+);"
     )
 
     ENUM_PATTERN = re.compile(
@@ -51,9 +52,17 @@ class SchemaParser:
 
             enums.append(enum_def)
 
-        for struct_name, body in matches:
+        for packet_id, struct_name, body in matches:
 
-            struct_def = StructDef(struct_name)
+            if packet_id:
+                packet_id = int(packet_id)
+            else:
+                packet_id = None
+
+            struct_def = StructDef(
+                struct_name,
+                packet_id
+            )
 
             fields = self.FIELD_PATTERN.findall(body)
 

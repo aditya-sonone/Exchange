@@ -10,19 +10,13 @@ enum OrderType {
     FOK
 }
 
+@packet(1)
 struct Order {
     uint64 orderId;
     Side side;
-    double price;
-    OrderType type;
 }
 
-struct PriceLevel {
-    double price;
-    uint32 quantity;
-}
-
-struct OrderBookEntry {
-    PriceLevel bid;
-    PriceLevel ask;
+struct PacketHeader {
+    uint16 packetId;
+    uint32 payloadSize;
 }

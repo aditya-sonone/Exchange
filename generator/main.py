@@ -21,6 +21,7 @@ def main():
 
     structs, enums = parser.parse(schema_text)
 
+    print(structs)
     # Generator
     generator = CppGenerator()
     generator.struct_names = {

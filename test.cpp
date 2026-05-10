@@ -2,15 +2,14 @@
 #include <iostream>
 
 #include "generated/order.hpp"
+#include "generated/packetdispatcher.hpp"
 
 
 int main()
 {
     Order order(
-        1,
-        Side::Buy,
-        350.5,
-        OrderType::IOC
+        69,
+        Side::Sell
     );
 
     std::ofstream out(
@@ -18,29 +17,18 @@ int main()
         std::ios::binary
     );
 
-    order.serialize(out);
+    order.serializePacket(out);
 
     out.close();
-
-    Order loadedOrder(
-        0,
-        Side::Sell,
-        0,
-        OrderType::FOK
-    );
 
     std::ifstream in(
         "order.bin",
         std::ios::binary
     );
 
-    loadedOrder.deserialize(in);
+    PacketDispatcher::dispatch(in);
 
     in.close();
-
-    std::cout
-        << loadedOrder.toString()
-        << std::endl;
 
     return 0;
 }

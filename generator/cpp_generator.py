@@ -1,9 +1,17 @@
 TYPE_MAP = {
-    "uint64": "uint64_t",
+
+    "uint8": "uint8_t",
+    "uint16": "uint16_t",
     "uint32": "uint32_t",
-    "int": "int",
+    "uint64": "uint64_t",
+
+    "int8": "int8_t",
+    "int16": "int16_t",
+    "int32": "int32_t",
+    "int64": "int64_t",
+
+    "float": "float",
     "double": "double",
-    "bool": "bool",
     "string": "std::string"
 }
 
@@ -15,8 +23,16 @@ class CppGenerator:
         self.enum_names = set()
 
     def cpp_type(self, schema_type):
-
-        return TYPE_MAP.get(schema_type, schema_type)
+        if self.is_vector_type(schema_type):
+            inner = self.get_vector_inner_type(
+                schema_type
+            )
+            cpp_inner = self.cpp_type(inner)
+            return f"std::vector<{cpp_inner}>"
+        return TYPE_MAP.get(
+            schema_type,
+            schema_type
+        )
 
     def getter_name(self, field_name, field_type):
 
@@ -90,24 +106,29 @@ class CppGenerator:
         lines.append("#include <sstream>")
         lines.append("#include <ostream>")
         lines.append("#include <istream>")
+        lines.append("#include <vector>")
+        if struct_def.packet_id is not None:
+            lines.append(
+                '#include "packetheader.hpp"'
+            )
         # Custom type includes
         included_types = set()
 
         for field in struct_def.fields:
-
-            if not self.is_builtin_type(field.field_type):
-
-                if field.field_type not in included_types:
-
+            field_type = field.field_type
+            if self.is_vector_type(field_type):
+                field_type = self.get_vector_inner_type(
+                    field_type
+                )
+            if not self.is_builtin_type(field_type):
+                if field_type not in included_types:
                     include_file = (
-                        field.field_type.lower() + ".hpp"
+                        field_type.lower() + ".hpp"
                     )
-
                     lines.append(
                         f'#include "{include_file}"'
                     )
-
-                    included_types.add(field.field_type)
+                    included_types.add(field_type)
 
         lines.append("")
         lines.append("")
@@ -127,6 +148,14 @@ class CppGenerator:
 
         lines.append("")
         lines.append("public:")
+        if struct_def.packet_id is not None:
+
+            lines.append("")
+
+            lines.append(
+                f"    static constexpr uint16_t "
+                f"PACKET_ID = {struct_def.packet_id};"
+            )
         lines.append("")
         default_constructor_lines = (
             self.generate_default_constructor(
@@ -161,6 +190,16 @@ class CppGenerator:
         )
 
         lines.extend(binary_size_lines)
+
+        if struct_def.packet_id is not None:
+
+            packet_lines = (
+                self.generate_packet_serializer(
+                    struct_def
+                )
+            )
+
+            lines.extend(packet_lines)
 
         for field in struct_def.fields:
 
@@ -233,7 +272,11 @@ class CppGenerator:
                     f'        ss << "{field.name}=" '
                     f'<< static_cast<int>({field.name});'
                 )
-
+            elif self.is_vector_type(field.field_type):
+                lines.append(
+                    f'        ss << "{field.name}.size=" '
+                    f'<< {field.name}.size();'
+                )
             elif self.is_struct_type(field.field_type):
 
                 lines.append(
@@ -324,7 +367,71 @@ class CppGenerator:
                 lines.append("        );")
 
                 lines.append("")
+            elif self.is_vector_type(field.field_type):
+
+                inner = self.get_vector_inner_type(
+                    field.field_type
+                )
+
+                lines.append(
+                    f"        uint32_t {field.name}Size = "
+                    f"{field.name}.size();"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    "        out.write("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<const char*>(&{field.name}Size),"
+                )
+
+                lines.append(
+                    f"            sizeof({field.name}Size)"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+
+                lines.append(
+                    f"        for (const auto& item : {field.name})"
+                )
+
+                lines.append("        {")
+
+                if self.is_struct_type(inner):
+
+                    lines.append(
+                        "            item.serialize(out);"
+                    )
+
+                else:
+
+                    lines.append(
+                        "            out.write("
+                    )
+
+                    lines.append(
+                        "                reinterpret_cast<const char*>(&item),"
+                    )
+
+                    lines.append(
+                        "                sizeof(item)"
+                    )
+
+                    lines.append(
+                        "            );"
+                    )
+
+                lines.append("        }")
+
+                lines.append("")
+
             elif self.is_struct_type(field.field_type):
+
                 lines.append(
                     f"        {field.name}.serialize(out);"
                 )
@@ -433,6 +540,72 @@ class CppGenerator:
                 )
 
                 lines.append("")
+            elif self.is_vector_type(field.field_type):
+                inner = self.get_vector_inner_type(
+                    field.field_type
+                )
+
+                lines.append(
+                    f"        uint32_t {field.name}Size;"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    "        in.read("
+                )
+
+                lines.append(
+                    f"            reinterpret_cast<char*>(&{field.name}Size),"
+                )
+
+                lines.append(
+                    f"            sizeof({field.name}Size)"
+                )
+
+                lines.append("        );")
+
+                lines.append("")
+
+                lines.append(
+                    f"        {field.name}.resize({field.name}Size);"
+                )
+
+                lines.append("")
+
+                lines.append(
+                    f"        for (auto& item : {field.name})"
+                )
+
+                lines.append("        {")
+
+                if self.is_struct_type(inner):
+
+                    lines.append(
+                        "            item.deserialize(in);"
+                    )
+
+                else:
+
+                    lines.append(
+                        "            in.read("
+                    )
+
+                    lines.append(
+                        "                reinterpret_cast<char*>(&item),"
+                    )
+
+                    lines.append(
+                        "                sizeof(item)"
+                    )
+
+                    lines.append(
+                        "            );"
+                    )
+
+                lines.append("        }")
+
+                lines.append("")
             elif self.is_struct_type(field.field_type):
                 lines.append(
                     f"        {field.name}.deserialize(in);"
@@ -476,38 +649,53 @@ class CppGenerator:
         size_parts = []
 
         for field in struct_def.fields:
-
             if self.is_string_type(field.field_type):
-
                 size_parts.append(
                     f"sizeof(uint32_t) + {field.name}.size()"
                 )
-
+            elif self.is_enum_type(field.field_type):
+                size_parts.append(
+                    "sizeof(int)"
+                )
+            elif self.is_vector_type(field.field_type):
+                inner = self.get_vector_inner_type(
+                    field.field_type
+                )
+                if self.is_struct_type(inner):
+                    size_parts.append(
+                        f"sizeof(uint32_t) + "
+                        f"[&]()"
+                        f"{{ "
+                        f"uint32_t total = 0; "
+                        f"for (const auto& item : {field.name}) "
+                        f"{{ total += item.binarySize(); }} "
+                        f"return total; "
+                        f"}}()"
+                    )
+                else:
+                    size_parts.append(
+                        f"sizeof(uint32_t) + "
+                        f"({field.name}.size() * sizeof({self.cpp_type(inner)}))"
+                    )
+            elif self.is_struct_type(field.field_type):
+                size_parts.append(
+                    f"{field.name}.binarySize()"
+                )
             else:
-
                 size_parts.append(
                     f"sizeof({field.name})"
                 )
-
         if size_parts:
-
             lines.append("        return")
-
             for i, part in enumerate(size_parts):
-
                 operator = " +"
-
                 if i == len(size_parts) - 1:
                     operator = ";"
-
                 lines.append(
                     f"            {part}{operator}"
                 )
-
         else:
-
             lines.append("        return 0;")
-
         lines.append("    }")
         lines.append("")
 
@@ -539,17 +727,7 @@ class CppGenerator:
         return "\n".join(lines)
     
     def is_builtin_type(self, field_type):
-
-        builtin_types = {
-            "uint64",
-            "uint32",
-            "int",
-            "double",
-            "bool",
-            "string"
-        }
-
-        return field_type in builtin_types
+        return field_type in TYPE_MAP
     
     def is_enum_type(self, field_type):
         return field_type in self.enum_names
@@ -562,6 +740,64 @@ class CppGenerator:
         lines.append(
             f"    {struct_def.name}() = default;"
         )
+
+        lines.append("")
+
+        return lines
+
+    def is_vector_type(self, field_type):
+        return (
+            field_type.startswith("vector<")
+            and field_type.endswith(">")
+        )
+    
+    def get_vector_inner_type(self, field_type):
+        start = field_type.find("<") + 1
+        end = field_type.rfind(">")
+        return field_type[start:end]
+
+    def generate_packet_serializer(
+        self,
+        struct_def
+    ):
+
+        lines = []
+
+        lines.append(
+            "    void serializePacket(std::ostream& out) const"
+        )
+
+        lines.append("    {")
+
+        lines.append(
+            "        PacketHeader header("
+        )
+
+        lines.append(
+            "            PACKET_ID,"
+        )
+
+        lines.append(
+            "            binarySize()"
+        )
+
+        lines.append(
+            "        );"
+        )
+
+        lines.append("")
+
+        lines.append(
+            "        header.serialize(out);"
+        )
+
+        lines.append("")
+
+        lines.append(
+            "        serialize(out);"
+        )
+
+        lines.append("    }")
 
         lines.append("")
 

@@ -8,15 +8,32 @@ class Field:
 
 
 class StructDef:
-    def __init__(self, name):
+
+    def __init__(
+        self,
+        name,
+        packet_id=None
+    ):
+
         self.name = name
+
+        self.packet_id = packet_id
+
         self.fields = []
 
     def add_field(self, field):
+
         self.fields.append(field)
 
     def __repr__(self):
-        return f"StructDef(name={self.name}, fields={self.fields})"
+
+        return (
+            f"StructDef("
+            f"name={self.name}, "
+            f"packet_id={self.packet_id}, "
+            f"fields={self.fields}"
+            f")"
+        )
     
 class EnumDef:
 
