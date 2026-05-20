@@ -58,6 +58,16 @@ def main():
             generated_code
         )
 
+    # Generate packet dispatcher
+    dispatcher_code = generator.generate_packet_dispatcher(
+        structs
+    )
+
+    writer.write_header(
+        "packetdispatcher",
+        dispatcher_code
+    )
+
     print("\nGeneration complete.")
 
 

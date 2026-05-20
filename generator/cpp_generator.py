@@ -802,3 +802,138 @@ class CppGenerator:
         lines.append("")
 
         return lines
+    
+
+
+    def generate_packet_dispatcher(self, structs):
+        lines = []
+
+        lines.append("#pragma once")
+        lines.append("")
+        lines.append("#include <functional>")
+        lines.append("#include <iostream>")
+        lines.append("#include <istream>")
+        lines.append("")
+
+        # include packet header
+        lines.append('#include "packetheader.hpp"')
+
+        # include packet structs
+        for struct in structs:
+            if struct.packet_id is not None:
+                lines.append(f'#include "{struct.name.lower()}.hpp"')
+
+        lines.append("")
+        lines.append("class PacketDispatcher")
+        lines.append("{")
+        lines.append("public:")
+        lines.append("")
+
+        #
+        # Handler typedefs
+        #
+        for struct in structs:
+            if struct.packet_id is not None:
+                lines.append(
+                    f"    using {struct.name}HandlerFn ="
+                )
+                lines.append(
+                    f"        std::function<void(const {struct.name}&)>;"
+                )
+                lines.append("")
+
+        #
+        # Registration methods
+        #
+        for struct in structs:
+            if struct.packet_id is not None:
+                lines.append(
+                    f"    static void register{struct.name}Handler("
+                )
+                lines.append(
+                    f"        {struct.name}HandlerFn handler)"
+                )
+                lines.append("    {")
+                lines.append(
+                    f"        {struct.name.lower()}Handler = handler;"
+                )
+                lines.append("    }")
+                lines.append("")
+
+        #
+        # Dispatch method
+        #
+        lines.append("    static void dispatch(std::istream& in)")
+        lines.append("    {")
+        lines.append("        PacketHeader header;")
+        lines.append("")
+        lines.append("        header.deserialize(in);")
+        lines.append("")
+        lines.append("        switch(header.getPacketId())")
+        lines.append("        {")
+
+        for struct in structs:
+            if struct.packet_id is not None:
+
+                lines.append(
+                    f"            case {struct.name}::PACKET_ID:"
+                )
+                lines.append("            {")
+                lines.append(
+                    f"                {struct.name} packet;"
+                )
+                lines.append("")
+                lines.append(
+                    "                packet.deserialize(in);"
+                )
+                lines.append("")
+
+                lines.append(
+                    f"                if ({struct.name.lower()}Handler)"
+                )
+                lines.append("                {")
+                lines.append(
+                    f"                    {struct.name.lower()}Handler(packet);"
+                )
+                lines.append("                }")
+
+                lines.append("")
+                lines.append("                break;")
+                lines.append("            }")
+                lines.append("")
+
+        #
+        # Default case
+        #
+        lines.append("            default:")
+        lines.append("            {")
+        lines.append(
+            '                std::cout << "Unknown packet"'
+        )
+        lines.append(
+            '                          << std::endl;'
+        )
+        lines.append("")
+        lines.append("                break;")
+        lines.append("            }")
+
+        lines.append("        }")
+        lines.append("    }")
+        lines.append("")
+
+        #
+        # Private handlers
+        #
+        lines.append("private:")
+        lines.append("")
+
+        for struct in structs:
+            if struct.packet_id is not None:
+                lines.append(
+                    f"    inline static {struct.name}HandlerFn "
+                    f"{struct.name.lower()}Handler = nullptr;"
+                )
+
+        lines.append("};")
+
+        return "\n".join(lines)
