@@ -29,5 +29,9 @@ void OrderHandler::handle(const Order& order)
               << sideToString(order.getSide())
               << std::endl;
 
+    std::cout << "Price: "
+              << order.getPrice()
+              << std::endl;
+
     std::cout << "=================\n";
 }

@@ -31,7 +31,9 @@ void Server::start()
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(m_port);
 
-    if (bind(serverFd, (sockaddr*)&address, sizeof(address)) < 0)
+    if (bind(serverFd,
+             (sockaddr*)&address,
+             sizeof(address)) < 0)
     {
         std::cerr << "Bind failed\n";
         return;
@@ -49,7 +51,8 @@ void Server::start()
 
     while (true)
     {
-        int clientFd = accept(serverFd, nullptr, nullptr);
+        int clientFd =
+            accept(serverFd, nullptr, nullptr);
 
         if (clientFd < 0)
         {
@@ -61,43 +64,85 @@ void Server::start()
 
         while (true)
         {
-            PacketHeader header;
+            //
+            // Read raw header bytes
+            //
+            char headerBuffer[6];
 
             ssize_t headerBytes =
                 recv(clientFd,
-                     &header,
-                     sizeof(PacketHeader),
+                     headerBuffer,
+                     sizeof(headerBuffer),
                      MSG_WAITALL);
 
             if (headerBytes <= 0)
             {
-                std::cout << "Client disconnected\n";
+                std::cout
+                    << "Client disconnected\n";
+
                 close(clientFd);
+
                 break;
             }
 
-            std::vector<char> payload(header.getPayloadSize());
+            //
+            // Deserialize header
+            //
+            std::stringstream headerStream;
+
+            headerStream.write(
+                headerBuffer,
+                sizeof(headerBuffer)
+            );
+
+            PacketHeader header;
+
+            header.deserialize(headerStream);
+
+            //
+            // Read payload
+            //
+            std::vector<char> payload(
+                header.getPayloadSize()
+            );
 
             ssize_t payloadBytes =
                 recv(clientFd,
                      payload.data(),
-                     header.getPayloadSize(),
+                     payload.size(),
                      MSG_WAITALL);
 
             if (payloadBytes <= 0)
             {
-                std::cout << "Payload read failed\n";
+                std::cout
+                    << "Payload read failed\n";
+
                 close(clientFd);
+
                 break;
             }
 
-            std::stringstream stream;
+            //
+            // Reconstruct full packet stream
+            //
+            std::stringstream packetStream;
 
-            header.serialize(stream);
+            packetStream.write(
+                headerBuffer,
+                sizeof(headerBuffer)
+            );
 
-            stream.write(payload.data(), payload.size());
+            packetStream.write(
+                payload.data(),
+                payload.size()
+            );
 
-            PacketDispatcher::dispatch(stream);
+            //
+            // Dispatch packet
+            //
+            PacketDispatcher::dispatch(
+                packetStream
+            );
         }
     }
 }

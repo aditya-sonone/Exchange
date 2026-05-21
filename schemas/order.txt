@@ -14,6 +14,7 @@ enum OrderType {
 struct Order {
     uint64 orderId;
     Side side;
+    uint64 price;
 }
 
 struct PacketHeader {
