@@ -9,25 +9,18 @@ int main()
 {
     Order order;
 
-    order.setOrderId(123);
+    order.setOrderId(623);
     order.setSide(Side::Buy);
-    order.setPrice(1000);
+    order.setPrice(5400);
+    order.setPan("A2377");
 
-    std::ofstream out(
-        "order.bin",
-        std::ios::binary
-    );
-    std::cout << order.getOrderId() << std::endl;
-std::cout << static_cast<int>(order.getSide()) << std::endl;
-std::cout << order.getPrice() << std::endl;
+    std::ofstream out("../order.bin", std::ios::binary);
+
     order.serializePacket(out);
 
     out.close();
 
-    std::ifstream in(
-        "order.bin",
-        std::ios::binary
-    );
+    std::ifstream in("../order.bin", std::ios::binary);
 
     PacketDispatcher::dispatch(in);
 

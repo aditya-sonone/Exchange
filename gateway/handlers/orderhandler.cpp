@@ -2,36 +2,27 @@
 
 #include <iostream>
 
-static std::string sideToString(Side side)
+void OrderHandler::initialize(
+    OrderQueue* queue)
 {
-    switch (side)
-    {
-        case Side::Buy:
-            return "Buy";
-
-        case Side::Sell:
-            return "Sell";
-
-        default:
-            return "Unknown";
-    }
+    s_queue = queue;
 }
 
-void OrderHandler::handle(const Order& order)
+void OrderHandler::handle(
+    const Order& order)
 {
-    std::cout << "\n=== NEW ORDER ===\n";
+    if (!s_queue)
+    {
+        std::cerr
+            << "Order queue not initialized\n";
 
-    std::cout << "Order ID: "
-              << order.getOrderId()
-              << std::endl;
+        return;
+    }
 
-    std::cout << "Side: "
-              << sideToString(order.getSide())
-              << std::endl;
+    std::cout
+        << "[GATEWAY] Received Order "
+        << order.getOrderId()
+        << std::endl;
 
-    std::cout << "Price: "
-              << order.getPrice()
-              << std::endl;
-
-    std::cout << "=================\n";
+    s_queue->push(order);
 }

@@ -12,4 +12,9 @@ add_executable(gateway
 
 target_include_directories(gateway PRIVATE
     ../generated
+    ../matcher
+)
+
+target_link_libraries(gateway
+    matcher
 )

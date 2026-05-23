@@ -68,6 +68,9 @@ def main():
         dispatcher_code
     )
 
+    stamp_file = generated_dir / ".stamp"
+    stamp_file.touch()
+
     print("\nGeneration complete.")
 
 
