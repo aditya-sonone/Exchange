@@ -37,6 +37,7 @@ void Matcher::run()
     while (m_running)
     {
         Order order = m_queue.pop();
+        m_orderBook.addOrder(order);
 
         std::cout
             << "\n[MATCHER] Processing Order\n";

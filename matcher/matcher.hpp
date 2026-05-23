@@ -4,6 +4,7 @@
 #include <thread>
 
 #include "orderqueue.hpp"
+#include "orderbook.hpp"
 
 class Matcher
 {
@@ -24,6 +25,7 @@ private:
 private:
 
     OrderQueue& m_queue;
+    OrderBook m_orderBook;
 
     std::thread m_thread;
 

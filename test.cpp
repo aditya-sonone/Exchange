@@ -2,29 +2,47 @@
 #include <iostream>
 
 #include "generated/order.hpp"
-#include "generated/packetdispatcher.hpp"
-
 
 int main()
 {
-    Order order;
+    std::ofstream out(
+        "../order.bin",
+        std::ios::binary
+    );
 
-    order.setOrderId(623);
-    order.setSide(Side::Buy);
-    order.setPrice(5400);
-    order.setPan("A2377");
+    if (!out.is_open())
+    {
+        std::cerr
+            << "Failed to open order.bin"
+            << std::endl;
 
-    std::ofstream out("../order.bin", std::ios::binary);
+        return 1;
+    }
 
-    order.serializePacket(out);
+    for (uint64_t i = 1; i <= 10; ++i)
+    {
+        Order order;
+        order.setOrderId(i);
+        if (i % 2 == 0)
+        {
+            order.setSide(Side::Sell);
+        }
+        else
+        {
+            order.setSide(Side::Buy);
+        }
+        order.setPrice(5000 + (i * 10));
+        order.setQuantity(100 * i);
+        order.serializePacket(out);
+
+        std::cout<< "Generated Order "<< i<< std::endl;
+    }
 
     out.close();
 
-    std::ifstream in("../order.bin", std::ios::binary);
-
-    PacketDispatcher::dispatch(in);
-
-    in.close();
+    std::cout
+        << "\nGenerated 10 orders successfully."
+        << std::endl;
 
     return 0;
 }

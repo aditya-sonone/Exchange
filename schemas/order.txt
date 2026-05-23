@@ -15,7 +15,7 @@ struct Order {
     uint64 orderId;
     Side side;
     uint64 price;
-    string pan;
+    uint64 quantity;
 }
 
 struct PacketHeader {
