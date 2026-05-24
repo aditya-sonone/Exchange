@@ -12,13 +12,32 @@ class FileWriter:
             exist_ok=True
         )
 
-    def write_header(self, struct_name, content):
+    def write_file(
+        self,
+        filename,
+        extension,
+        content
+    ):
 
-        file_name = f"{struct_name.lower()}.hpp"
-
-        file_path = self.output_dir / file_name
+        file_path = (
+            self.output_dir /
+            f"{filename}{extension}"
+        )
 
         with open(file_path, "w") as f:
+
             f.write(content)
 
         print(f"Generated: {file_path}")
+
+    def write_header(
+        self,
+        struct_name,
+        content
+    ):
+
+        self.write_file(
+            struct_name.lower(),
+            ".hpp",
+            content
+        )

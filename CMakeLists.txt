@@ -25,6 +25,7 @@ add_custom_command(
         ${CMAKE_SOURCE_DIR}/generator/cpp_generator.py
         ${CMAKE_SOURCE_DIR}/generator/file_writer.py
         ${CMAKE_SOURCE_DIR}/generator/models.py
+        ${CMAKE_SOURCE_DIR}/generator/python_generator.py
 
     WORKING_DIRECTORY
         ${CMAKE_SOURCE_DIR}/generator

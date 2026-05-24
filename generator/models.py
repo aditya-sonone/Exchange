@@ -9,24 +9,19 @@ class Field:
 
 class StructDef:
 
-    def __init__(
-        self,
-        name,
-        packet_id=None
-    ):
+    REQUEST = "REQUEST"
+    RESPONSE = "RESPONSE"
 
+    def __init__(self, name, packet_id=None, direction="REQUEST"):
         self.name = name
-
         self.packet_id = packet_id
-
+        self.direction = direction
         self.fields = []
 
     def add_field(self, field):
-
         self.fields.append(field)
 
     def __repr__(self):
-
         return (
             f"StructDef("
             f"name={self.name}, "
@@ -38,17 +33,13 @@ class StructDef:
 class EnumDef:
 
     def __init__(self, name):
-
         self.name = name
-
         self.values = []
 
     def add_value(self, value):
-
         self.values.append(value)
 
     def __repr__(self):
-
         return (
             f"EnumDef(name={self.name}, "
             f"values={self.values})"

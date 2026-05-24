@@ -10,12 +10,27 @@ enum OrderType {
     FOK
 }
 
+enum OrderStatus {
+    Accepted,
+    Rejected,
+    Filled,
+    PartiallyFilled
+}
+
 @packet(1)
 struct Order {
     uint64 orderId;
     Side side;
-    uint64 price;
-    uint64 quantity;
+    uint32 price;
+    uint32 quantity;
+}
+
+@packet(2)
+struct OrderAck {
+    uint64 orderId;
+    uint8 status;   // 0=Accepted, 1=Rejected, 2=Filled
+    uint32 filledQty;
+    uint32 remainingQty;
 }
 
 struct PacketHeader {

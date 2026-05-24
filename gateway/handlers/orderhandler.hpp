@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../generated/order.hpp"
+#include "../../generated/cpp/order.hpp"
 #include "../../matcher/orderqueue.hpp"
 
 class OrderHandler

@@ -4,7 +4,7 @@
 #include <mutex>
 #include <queue>
 
-#include "../generated/order.hpp"
+#include "../generated/cpp/order.hpp"
 
 class OrderQueue
 {

@@ -2,73 +2,177 @@ from pathlib import Path
 
 from parser import SchemaParser
 from cpp_generator import CppGenerator
+from python_generator import PythonGenerator
 from file_writer import FileWriter
 
 
 def main():
+
+    INFRASTRUCTURE_TYPES = {
+        "PacketHeader"
+    }
     # Schema file
     schema_path = Path("../schemas/order.txt")
 
-    # Output directory
-    generated_dir = Path("../generated")
+    # Output directories
+    cpp_generated_dir = Path(
+        "../generated/cpp"
+    )
+
+    python_generated_dir = Path(
+        "../generated/python"
+    )
 
     # Read schema
     with open(schema_path, "r") as f:
+
         schema_text = f.read()
 
     # Parse schema
     parser = SchemaParser()
 
-    structs, enums = parser.parse(schema_text)
+    structs, enums = parser.parse(
+        schema_text
+    )
 
     print(structs)
-    # Generator
-    generator = CppGenerator()
-    generator.struct_names = {
+
+    # -----------------------------
+    # C++ GENERATION
+    # -----------------------------
+
+    cpp_generator = CppGenerator()
+
+    cpp_generator.struct_names = {
         s.name for s in structs
     }
-    generator.enum_names = {
+
+    cpp_generator.enum_names = {
         e.name for e in enums
     }
 
-    # File writer
-    writer = FileWriter(generated_dir)
+    cpp_writer = FileWriter(
+        cpp_generated_dir
+    )
 
-    # Generate enums
+    # Generate C++ enums
     for enum_def in enums:
 
-        generated_enum = generator.generate_enum(
-            enum_def
+        generated_enum = (
+            cpp_generator.generate_enum(
+                enum_def
+            )
         )
 
-        writer.write_header(
+        cpp_writer.write_header(
             enum_def.name,
             generated_enum
         )
 
-    # Generate structs
+    # Generate C++ structs
     for struct_def in structs:
 
-        generated_code = generator.generate_struct(
-            struct_def
+        generated_code = (
+            cpp_generator.generate_struct(
+                struct_def
+            )
         )
 
-        writer.write_header(
+        cpp_writer.write_header(
             struct_def.name,
             generated_code
         )
 
-    # Generate packet dispatcher
-    dispatcher_code = generator.generate_packet_dispatcher(
-        structs
+    # Generate dispatcher
+    dispatcher_code = (
+        cpp_generator.generate_packet_dispatcher(
+            structs
+        )
     )
 
-    writer.write_header(
+    cpp_writer.write_header(
         "packetdispatcher",
         dispatcher_code
     )
 
-    stamp_file = generated_dir / ".stamp"
+    # -----------------------------
+    # PYTHON GENERATION
+    # -----------------------------
+
+    python_generator = PythonGenerator()
+
+    python_generator.enum_names = {
+        e.name for e in enums
+    }
+
+    python_writer = FileWriter(
+        python_generated_dir
+    )
+
+    # Generate Python enums
+    for enum_def in enums:
+
+        generated_enum = (
+            python_generator.generate_enum(
+                enum_def
+            )
+        )
+
+        python_writer.write_file(
+            enum_def.name.lower(),
+            ".py",
+            generated_enum
+        )
+
+    # Generate Python structs
+    for struct_def in structs:
+        if struct_def.name in INFRASTRUCTURE_TYPES:
+            continue
+        
+        generated_code = (
+            python_generator.generate_struct(
+                struct_def
+            )
+        )
+
+        python_writer.write_file(
+            struct_def.name.lower(),
+            ".py",
+            generated_code
+        )
+
+    # Python package marker
+    python_writer.write_file(
+        "__init__",
+        ".py",
+        ""
+    )
+
+    registry_code = python_generator.generate_packet_registry(
+        structs
+    )
+
+    python_writer.write_file(
+        "packet_registry",
+        ".py",
+        registry_code
+    )
+
+    dispatcher_code = (
+        python_generator.generate_packet_dispatcher()
+    )
+
+    python_writer.write_file(
+        "packet_dispatcher",
+        ".py",
+        dispatcher_code
+    )
+
+    # Stamp file
+    stamp_file = (
+        cpp_generated_dir / ".stamp"
+    )
+
     stamp_file.touch()
 
     print("\nGeneration complete.")

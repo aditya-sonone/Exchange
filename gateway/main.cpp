@@ -1,6 +1,6 @@
 #include "server.hpp"
 
-#include "../generated/packetdispatcher.hpp"
+#include "../generated/cpp/packetdispatcher.hpp"
 
 #include "handlers/orderhandler.hpp"
 

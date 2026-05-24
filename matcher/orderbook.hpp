@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "../generated/order.hpp"
+#include "../generated/cpp/order.hpp"
 
 class OrderBook
 {

@@ -1,7 +1,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "generated/order.hpp"
+#include "generated/cpp/order.hpp"
 
 int main()
 {

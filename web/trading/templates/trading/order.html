@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Exchange Gateway</title>
+
+    <style>
+
+        body {
+            background-color: #111;
+            color: #eee;
+            font-family: monospace;
+            padding: 40px;
+        }
+
+        .container {
+            width: 420px;
+            margin: auto;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 24px;
+            background-color: #1a1a1a;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            margin-bottom: 6px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            background-color: #222;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+
+            background-color: #0a84ff;
+            color: white;
+
+            border: none;
+            border-radius: 4px;
+
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #0066cc;
+        }
+
+        .status {
+            margin-top: 24px;
+            padding: 12px;
+
+            border: 1px solid #333;
+            border-radius: 4px;
+
+            background-color: #151515;
+        }
+
+        .success {
+            color: #4caf50;
+        }
+
+        .error {
+            color: #ff5252;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Exchange Gateway</h2>
+
+    <form method="POST">
+
+        {% csrf_token %}
+
+        <label>Order ID</label>
+        <input
+            type="number"
+            name="orderId"
+            required
+        >
+
+        <label>Side</label>
+
+        <select name="side">
+
+            <option value="0">
+                BUY
+            </option>
+
+            <option value="1">
+                SELL
+            </option>
+
+        </select>
+
+        <label>Price</label>
+
+        <input
+            type="number"
+            name="price"
+            required
+        >
+
+        <label>Quantity</label>
+
+        <input
+            type="number"
+            name="quantity"
+            required
+        >
+
+        <button type="submit">
+            Submit Order
+        </button>
+
+    </form>
+
+    <div class="status">
+
+        {% if message %}
+
+            <div class="success">
+                {{ message }}
+            </div>
+
+        {% else %}
+
+            Waiting for orders...
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>
