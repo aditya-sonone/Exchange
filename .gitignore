@@ -16,3 +16,23 @@ obj-debug/
 
 # Allow important git files
 !.gitignore
+
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# -----------------------------
+# Virtual environments
+# -----------------------------
+venv/
+.env/
+room/
+
+# -----------------------------
+# Django
+# -----------------------------
+db.sqlite3
